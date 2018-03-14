@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:camel="http://camel.apache.org/schema/spring"
+       xsi:schemaLocation="
+         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+         http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+         http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+  <context:property-placeholder location="/etc/blacklist/blacklist.properties"/>
+
+  <bean id="dataSource" class="org.apache.tomcat.jdbc.pool.DataSource" lazy-init="true">
+    <property name="driverClassName" value="${jdbc.driver}"/>
+    <property name="url" value="${jdbc.url}"/>
+    <property name="username" value="${jdbc.username}"/>
+    <property name="password" value="${jdbc.password}"/>
+    <property name="initialSize" value="2"/>
+    <property name="maxActive" value="8"/>
+    <property name="minIdle" value="0"/>
+    <property name="maxIdle" value="2"/>
+    <property name="maxWait" value="60000"/>
+
+    <property name="validationQuery" value="select 1"/>
+    <property name="testOnBorrow" value="true"/>
+    <property name="testWhileIdle" value="true"/>
+  </bean>
+
+  <camelContext xmlns="http://camel.apache.org/schema/spring">
+
+    <package>net.cfrq.blacklist</package>
+
+    <restConfiguration contextPath="/"
+                       bindingMode="auto"
+                       component="servlet"
+                       port="8080"/>
+
+  </camelContext>
+
+</beans>
