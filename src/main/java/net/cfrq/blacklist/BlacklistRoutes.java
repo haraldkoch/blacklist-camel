@@ -14,15 +14,8 @@ public class BlacklistRoutes extends RouteBuilder {
 
         // a few test routes just to make sure that our infrastructure is working
         rest("/say")
-                .get("/hello").id("get-hello").to("direct:hello")
-                .get("/bye").id("get-bye").consumes("application/json").to("direct:bye")
-                .post("/bye").id("post-bye").to("mock:update");
-
-        from("direct:hello").id("direct-hello")
-                .transform().constant("Hello World");
-        from("direct:bye").id("direct-bye")
-                .transform().constant("Bye World");
-
+                .get("/hello").id("get-hello").to("direct:hello").route().transform().constant("Hello World!\n");
+                
         rest("/")
             .get("/").id("get-all").description("get all blacklist entries")
                 .param().name("ip").type(query).description("IP address to search").dataType("string").endParam()
@@ -31,10 +24,9 @@ public class BlacklistRoutes extends RouteBuilder {
                 .choice()
                     .when(header("ip").isNotNull())
                         .to("sql:SELECT * FROM blacklist WHERE ip LIKE :#ip")
-                .otherwise()
+                    .otherwise()
                         .to("sql:SELECT * FROM blacklist")
-                .end()
-
+                    .end()
                 .choice()
                     .when().simple("${body?.size} < 1")
                         .log("no entry found")
@@ -83,6 +75,7 @@ public class BlacklistRoutes extends RouteBuilder {
 
             .put("/{id}").id("update-entry").description("update existing entry")
                 .route()
+                .to("sql:UPDATE blacklist SET ip=:#ip, type=:#type, date=:#date, description=#:description WHERE id=${headers.id}")
                 .transform().simple("update entry ${headers.id} with ${body}")
                 .endRest()
 
