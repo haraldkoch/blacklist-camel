@@ -33,7 +33,7 @@
                        bindingMode="auto"
                        component="servlet"
                        port="8080">
-      <dataFormatProperty key="json.in.disableFeatures" value="WRITE_DATES_AS_TIMESTAMPS"/>
+      <dataFormatProperty key="json.out.disableFeatures" value="WRITE_DATES_AS_TIMESTAMPS"/>
     </restConfiguration>
 
   </camelContext>

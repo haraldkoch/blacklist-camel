@@ -1,12 +1,7 @@
 package net.cfrq.blacklist;
 
 import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
-
-import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Map;
 
 import static org.apache.camel.model.rest.RestParamType.*;
 
@@ -34,9 +29,8 @@ public class BlacklistRoutes extends RouteBuilder {
                 .convertBodyTo(String.class) // this prevents an annoying "java.io.IOException: Stream closed" error
                 .choice()
                     .when(header("ip").isNotNull())
-                        .setHeader("ip", simple("%${header.ip}%"))
                         .to("sql:SELECT * FROM blacklist WHERE ip LIKE :#ip")
-                    .otherwise()
+                .otherwise()
                         .to("sql:SELECT * FROM blacklist")
                 .endRest()
 
@@ -46,27 +40,31 @@ public class BlacklistRoutes extends RouteBuilder {
                 .convertBodyTo(String.class) // this prevents an annoying "java.io.IOException: Stream closed" error
                 .to("sql:SELECT * FROM blacklist WHERE id=:#id")
 
-                // f'ing java.sql.Timestamp
-                .process(new Processor(){
-                    @SuppressWarnings("unchecked")
-                    @Override
-                    public void process(Exchange exchange) throws Exception {
-                        List<Map<String,Object>> results = (List<Map<String, Object>>) exchange.getIn().getBody();
-                        for (Map<String, Object> result : results) {
-                            Object date = result.get("date");
-                            // YYYY-MM-DD HH:MM:SS[.fraction]
-                            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-                            result.put("date", sdf.format(date));
-                        }
+                .choice()
+                    .when().simple("${body?.size} < 1")
+                        .log("no entry found for request ID ${header.id}")
+                        .setBody(simple("no request found with request ID ${header.id}"))
+                        .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
+                    .otherwise()
+                        .transform().simple("${body[0]}")
+                .end()
 
-                        exchange.getIn().setBody(results);
-                    }
-                })
+                // f'ing java.sql.Timestamp
                 .endRest()
 
             .post("/").id("create-entry").description("create a new blacklist entry")
                 .param().name("body").type(body).description("The entry to create").endParam()
                 .route()
+
+                .onException(org.springframework.dao.DuplicateKeyException.class)
+                    .log("attempt to insert duplicate IP ${body[ip]}")
+                    .setBody(simple("IP address ${body[ip]} is already in the blocklist"))
+                    .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                    .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
+                    .handled(true)
+                .end()
+
                 .to("sql:INSERT INTO blacklist (ip, type, date, description) VALUES (:#ip, :#type, :#date, :#description)")
                 .transform().simple("inserted ${body} rows.")
                 .endRest()
