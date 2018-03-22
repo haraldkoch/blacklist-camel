@@ -2,6 +2,7 @@ package net.cfrq.blacklist;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
+import org.apache.camel.model.dataformat.JsonLibrary;
 
 import static org.apache.camel.model.rest.RestParamType.*;
 
@@ -32,6 +33,17 @@ public class BlacklistRoutes extends RouteBuilder {
                         .to("sql:SELECT * FROM blacklist WHERE ip LIKE :#ip")
                 .otherwise()
                         .to("sql:SELECT * FROM blacklist")
+                .end()
+
+                .choice()
+                    .when().simple("${body?.size} < 1")
+                        .log("no entry found")
+                        .setBody(simple("no entry found"))
+                        .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
+                    .otherwise()
+                        .transform().simple("${body[0]}")
+                    .end()
                 .endRest()
 
             .get("/{id}").id("get-entry").description("fetch an entry by ID")
@@ -48,9 +60,7 @@ public class BlacklistRoutes extends RouteBuilder {
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
                     .otherwise()
                         .transform().simple("${body[0]}")
-                .end()
-
-                // f'ing java.sql.Timestamp
+                    .end()
                 .endRest()
 
             .post("/").id("create-entry").description("create a new blacklist entry")
@@ -65,8 +75,10 @@ public class BlacklistRoutes extends RouteBuilder {
                     .handled(true)
                 .end()
 
+                .setHeader("CamelSqlRetrieveGeneratedKeys", constant("true"))
                 .to("sql:INSERT INTO blacklist (ip, type, date, description) VALUES (:#ip, :#type, :#date, :#description)")
-                .transform().simple("inserted ${body} rows.")
+                .log("Inserted new row with id ${header.CamelSqlGeneratedKeyRows[0][id]} into database.")
+                .transform().simple("Inserted new row with id ${header.CamelSqlGeneratedKeyRows[0][id]} into database.")
                 .endRest()
 
             .put("/{id}").id("update-entry").description("update existing entry")
