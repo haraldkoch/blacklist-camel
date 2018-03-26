@@ -1,10 +1,11 @@
 package net.cfrq.blacklist;
 
+import static org.apache.camel.model.rest.RestParamType.*;
+
+import javax.ws.rs.core.MediaType;
+
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.model.dataformat.JsonLibrary;
-
-import static org.apache.camel.model.rest.RestParamType.*;
 
 @SuppressWarnings("unused")
 public class BlacklistRoutes extends RouteBuilder {
@@ -15,7 +16,7 @@ public class BlacklistRoutes extends RouteBuilder {
         // a few test routes just to make sure that our infrastructure is working
         rest("/say")
                 .get("/hello").id("get-hello").to("direct:hello").route().transform().constant("Hello World!\n");
-                
+
         rest("/")
             .get("/").id("get-all").description("get all blacklist entries")
                 .param().name("ip").type(query).description("IP address to search").dataType("string").endParam()
@@ -83,5 +84,24 @@ public class BlacklistRoutes extends RouteBuilder {
                 .route()
                 .transform().simple("delete entry ${headers.id}")
                 .endRest();
+
+
+        rest("/iptables")
+                .get("/").id("iptables").produces(MediaType.TEXT_PLAIN)
+                .route()
+                .convertBodyTo(String.class) // this prevents an annoying "java.io.IOException: Stream closed" error
+                .to("sql:SELECT * FROM blacklist")
+                .choice()
+                    .when().simple("${body?.size} < 1")
+                        .log("no entry found")
+                        .setBody(simple("no entry found"))
+                        .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
+                        .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
+                    .otherwise()
+                        .bean(ConvertToIPTables.class)
+                        .bean(FormatAsShellScript.class)
+                    .end()
+                .endRest();
+
     }
 }
