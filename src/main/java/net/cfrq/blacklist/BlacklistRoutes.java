@@ -34,8 +34,8 @@ public class BlacklistRoutes extends RouteBuilder {
                         .setBody(simple("no entry found"))
                         .setHeader(Exchange.CONTENT_TYPE, constant("text/plain"))
                         .setHeader(Exchange.HTTP_RESPONSE_CODE, constant("404"))
-                    .otherwise()
-                        .transform().simple("${body[0]}")
+//                    .otherwise()
+//                        .transform().simple("${body[0]}")
                     .end()
                 .endRest()
 
