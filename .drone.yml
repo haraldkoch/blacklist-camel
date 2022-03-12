@@ -12,8 +12,11 @@ steps:
 
 - name: authenticate
   image: robertstettner/drone-mvn-auth
+  settings:
+    servers:
+      from_secret: maven_servers
 
 - name: deploy
   image: maven:3-jdk-11
   commands:
-  - mvn tomcat7:redeploy -B
+  - mvn tomcat7:redeploy -B --global-settings settings.xml
