@@ -1,0 +1,10 @@
+---
+kind: pipeline
+type: kubernetes
+name: default
+
+steps:
+- name: build
+  image: maven:3-jdk-10
+  commands:
+  - mvn package -DskipTests=true -Dmaven.javadoc.skip=true -B -V
