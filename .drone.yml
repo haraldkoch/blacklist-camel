@@ -10,8 +10,8 @@ steps:
   - mvn package -DskipTests=true -Dmaven.javadoc.skip=true -B -V
   - mvn test -B
 
-  - name: authenticate
-    image: robertstettner/drone-mvn-auth
+- name: authenticate
+  image: robertstettner/drone-mvn-auth
 
 - name: deploy
   image: maven:3-jdk-11
