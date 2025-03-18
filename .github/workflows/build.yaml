@@ -38,34 +38,34 @@ jobs:
           name: Package
           path: staging
 
-    deploy:
-      if: ${{ github.event_name == 'workflow_dispatch' && inputs.release || github.event_name == 'push' }}
-      needs: build
-      name: Deploy
-      runs-on: java-runner
-      steps:
-        - name: Checkout
-          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.release || github.event_name == 'push' }}
+    needs: build
+    name: Deploy
+    runs-on: java-runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-        - name: Setup Maven
-          uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
-          with:
+      - name: Setup Maven
+        uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
+        with:
           java-version: '11'
           distribution: 'adopt'
 
-        - name: Maven Settings
-          uses: s4u/maven-settings-action@v3.1.0
-          with:
-            servers: '[{"id": "persephone", "username": "${{ secrets.TOMCAT_USER }}", "password": "${{ secrets.TOMCAT_TOKEN }}"}]'
+      - name: Maven Settings
+        uses: s4u/maven-settings-action@v3.1.0
+        with:
+          servers: '[{"id": "persephone", "username": "${{ secrets.TOMCAT_USER }}", "password": "${{ secrets.TOMCAT_TOKEN }}"}]'
 
-        - name: Download artifacts
-          uses: actions/download-artifact@v4.2.0
-          with:
-            name: Package
-            path: target
+      - name: Download artifacts
+        uses: actions/download-artifact@v4.2.0
+        with:
+          name: Package
+          path: target
 
-        - name: Deploy
-          run: mvn tomcat:redeploy -B
+      - name: Deploy
+        run: mvn tomcat:redeploy -B
 
   status:
     if: ${{ !cancelled() }}
