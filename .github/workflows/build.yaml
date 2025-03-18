@@ -65,7 +65,7 @@ jobs:
             path: target
 
         - name: Deploy
-          run mvn tomcat:redeploy -B
+          run: mvn tomcat:redeploy -B
 
   status:
     if: ${{ !cancelled() }}
