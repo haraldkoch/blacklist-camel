@@ -1,25 +1,82 @@
 ---
 name: Java CI
 
-on: [push]
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+    inputs:
+      release:
+        type: boolean
+        description: Whether to release the app
+        required: false
+        default: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Set up JDK 11
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Maven
         uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
         with:
           java-version: '11'
           distribution: 'adopt'
+
       - name: Build with Maven
         run: mvn --batch-mode --update-snapshots verify
 
       # save a copy of the build artifact so we can download it
       - run: mkdir staging && cp target/*.war staging
       - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
-        with:
+         with:
           name: Package
           path: staging
+
+    deploy:
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.release || github.event_name == 'push' }}
+      needs: build
+      name: Deploy
+      runs-on: java-runner
+      steps:
+        - name: Checkout
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+        - name: Setup Maven
+          uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
+          with:
+          java-version: '11'
+          distribution: 'adopt'
+
+        - name: Maven Settings
+          uses: s4u/maven-settings-action@v3.1.0
+          with:
+            servers: '[{"id": "persephone", "username": "${{ secrets.TOMCAT_USER }}", "password": "${{ secrets.TOMCAT_TOKEN }}"}]'
+
+        - name: Download artifacts
+          uses: actions/download-artifact@v4.2.0
+          with:
+            name: Package
+            path: target
+
+        - name: Deploy
+          run mvn tomcat:redeploy -B
+
+  status:
+    if: ${{ !cancelled() }}
+    needs: build
+    name: Build Success
+    runs-on: ubuntu-latest
+    steps:
+      - name: Any jobs failed?
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1
+
+      - name: All jobs passed or skipped?
+        if: ${{ !(contains(needs.*.result, 'failure')) }}
+        run: echo "All jobs passed or skipped" && echo "${{ toJSON(needs.*.result) }}"
