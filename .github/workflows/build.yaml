@@ -47,11 +47,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Setup Maven
+      - name: Setup Java
         uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4
         with:
           java-version: '11'
           distribution: 'adopt'
+
+      - name: Setup Maven
+        uses: stCarolas/setup-maven@v5
 
       - name: Maven Settings
         uses: s4u/maven-settings-action@v3.1.0
