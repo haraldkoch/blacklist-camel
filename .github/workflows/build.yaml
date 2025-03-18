@@ -34,7 +34,7 @@ jobs:
       # save a copy of the build artifact so we can download it
       - run: mkdir staging && cp target/*.war staging
       - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
-         with:
+        with:
           name: Package
           path: staging
 
