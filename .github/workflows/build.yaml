@@ -54,15 +54,15 @@ jobs:
           distribution: 'adopt'
 
       - name: Setup Maven
-        uses: stCarolas/setup-maven@v5
+        uses: stCarolas/setup-maven@d6af6abeda15e98926a57b5aa970a96bb37f97d1 # v5
 
       - name: Maven Settings
-        uses: s4u/maven-settings-action@v3.1.0
+        uses: s4u/maven-settings-action@64e42c454dbd42ef6370ac8539685755aedd205b # v3.1.0
         with:
           servers: '[{"id": "persephone", "username": "${{ secrets.TOMCAT_USER }}", "password": "${{ secrets.TOMCAT_TOKEN }}"}]'
 
       - name: Download artifacts
-        uses: actions/download-artifact@v4.2.0
+        uses: actions/download-artifact@b14cf4c92620c250e1c074ab0a5800e37df86765 # v4.2.0
         with:
           name: Package
           path: target
